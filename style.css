@@ -66,12 +66,13 @@ em { font-style: italic; }
   display: flex;
   align-items: center;
   gap: 9px;
-  font: 500 14px var(--sans);
+  font: 400 22px/1 var(--serif);
   text-decoration: none;
-  letter-spacing: -.01em;
+  letter-spacing: -.015em;
+  color: var(--ink);
 }
 .mark-dot {
-  width: 11px; height: 11px;
+  width: 13px; height: 13px;
   border-radius: 50%;
   background: radial-gradient(circle at 34% 30%, #e7f6b8 0 12%, var(--lime) 42%, #93bd78 100%);
 }
@@ -176,50 +177,21 @@ em { font-style: italic; }
 .visual-caption { bottom: 0; left: 0; }
 
 .orb {
-  width: min(21vw, 290px);
+  width: min(27vw, 360px);
   aspect-ratio: 1;
   border-radius: 50%;
   position: relative;
-  background: radial-gradient(circle at 36% 30%, #e7f6b8 0 8%, var(--lime) 31%, #93bd78 59%, #507761 100%);
-  box-shadow: inset -28px -24px 44px rgba(43,51,39,.16), 0 30px 46px rgba(60,90,55,.16);
-  animation: breathe 9s ease-in-out infinite;
+  filter: drop-shadow(0 22px 30px rgba(60,90,55,.14));
 }
-.orb-core {
-  position: absolute; inset: 38%;
-  border-radius: 50%;
-  background: rgba(244,239,225,.5);
-  filter: blur(14px);
-}
-.orbit {
-  position: absolute;
-  inset: -9%;
-  border: 1px solid var(--line);
-  border-radius: 50%;
-  animation: spin 34s linear infinite;
-}
-.orbit::after {
-  content: '';
-  position: absolute;
-  top: 50%; left: -4px;
-  width: 7px; height: 7px;
-  border-radius: 50%;
-  background: var(--moss);
-}
-.orbit-two { inset: -22%; animation-duration: 52s; animation-direction: reverse; }
-.orbit-three { inset: -36%; animation-duration: 74s; }
 
-@keyframes spin { to { transform: rotate(360deg); } }
-@keyframes breathe {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.035); }
-}
+ }
 
 @media (max-width: 900px) {
   .hero { grid-template-columns: 1fr; padding-top: 118px; gap: 8vw; }
   /* orbits sit at -36% inset, so the visual must leave room for them or they
      run off the viewport edge */
-  .hero-visual { order: -1; width: 62vw; max-width: 260px; margin: 0 auto 8px; }
-  .orb { width: 38vw; max-width: 160px; }
+  .hero-visual { order: -1; width: 60vw; max-width: 240px; margin: 0 auto 8px; }
+  .orb { width: 56vw; max-width: 230px; }
   .visual-meta, .visual-caption { display: none; }
 }
 
