@@ -37,28 +37,26 @@
     }
   }
 
-  /* ---------- pixel orb ---------- */
+  /* ---------- pixel scene: orb, firelight, fireflies ----------
+     Same technique as Meet's ChatScene — a low-res grid rasterised with integer
+     fillRect and scaled up. Two lights: a cool key from the upper left and a warm
+     ember rim from the lower right, so the sphere isn't uniformly lime. */
   var host = document.getElementById('orb');
   if (!host) return;
 
-  var S = 80;                 // logical grid: 80x80 chunky pixels
-  var CX = 40, CY = 39;       // orb centre
-  var R = 21;                 // orb radius
+  var S = 116;                    // logical grid
+  var CX = 58, CY = 54, R = 23;   // orb
 
-  // Light from the upper left, slightly toward the viewer. The z term is what makes
-  // this read as a sphere — without it the dot product is a linear ramp across the
-  // disc and you get flat diagonal stripes.
-  var LX = -0.40, LY = -0.46, LZ = 0.79;
+  var KEY  = { x: -0.40, y: -0.46, z: 0.79 };   // cool key, upper left
+  var WARM = { x:  0.62, y:  0.50, z: 0.36 };   // ember fill, lower right (the fire)
 
-  // Quantised shading bands — the banding IS the look; no smooth gradient.
-  var BANDS = [
-    [0.93, '#f2fcd8'],
-    [0.80, '#e3f5b0'],
-    [0.63, '#c7f074'],
-    [0.44, '#a8db63'],
-    [0.26, '#84b855'],
-    [0.10, '#639247'],
-    [-2.00, '#4a6f3d']
+  var COOL_BANDS = [
+    [0.93, '#f2fcd8'], [0.80, '#e3f5b0'], [0.63, '#c7f074'],
+    [0.44, '#a8db63'], [0.26, '#84b855'], [0.10, '#639247'], [-2, '#4a6f3d']
+  ];
+  // firelight falling on the shadow side — wood, ember and lamp tones from Meet
+  var WARM_BANDS = [
+    [0.80, '#e8a061'], [0.62, '#cf7a52'], [0.44, '#a8613f'], [-2, '#7a4a33']
   ];
 
   var canvas = document.createElement('canvas');
@@ -66,98 +64,109 @@
   canvas.style.cssText = 'display:block;width:100%;height:100%;image-rendering:pixelated;image-rendering:crisp-edges;';
   canvas.setAttribute('aria-hidden', 'true');
   host.appendChild(canvas);
-
   var ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = false;
 
-  function shadeFor(nx, ny, nz) {
-    // full surface normal dotted with the light direction
-    var lit = nx * LX + ny * LY + nz * LZ;
-    for (var i = 0; i < BANDS.length; i++) {
-      if (lit >= BANDS[i][0]) return BANDS[i][1];
-    }
-    return BANDS[BANDS.length - 1][1];
+  function band(bands, v) {
+    for (var i = 0; i < bands.length; i++) if (v >= bands[i][0]) return bands[i][1];
+    return bands[bands.length - 1][1];
   }
 
-  // The sphere never changes, so rasterise it once.
+  // The sphere is static — rasterise once.
   var sphere = document.createElement('canvas');
   sphere.width = S; sphere.height = S;
-  (function rasterise() {
-    var s = sphere.getContext('2d');
+  (function () {
+    var s2 = sphere.getContext('2d');
     for (var y = 0; y < S; y++) {
       for (var x = 0; x < S; x++) {
         var dx = (x + 0.5 - CX) / R, dy = (y + 0.5 - CY) / R;
         var d2 = dx * dx + dy * dy;
         if (d2 > 1) continue;
         var dz = Math.sqrt(1 - d2);
-        s.fillStyle = shadeFor(dx, dy, dz);
-        s.fillRect(x, y, 1, 1);
-        if (dz < 0.22) {                       // soften the silhouette edge
-          s.fillStyle = 'rgba(43,51,39,0.13)';
-          s.fillRect(x, y, 1, 1);
-        }
+        var lit  = dx * KEY.x  + dy * KEY.y  + dz * KEY.z;
+        var warm = dx * WARM.x + dy * WARM.y + dz * WARM.z;
+        // Firelight reads as a rim: only where the key has fallen away AND the
+        // surface is turning away from the viewer (low dz = grazing angle).
+        // Without the dz term it fills in as a patch rather than an edge.
+        var rim = lit < 0.20 && warm > 0.42 && dz < 0.72;
+        s2.fillStyle = rim ? band(WARM_BANDS, warm) : band(COOL_BANDS, lit);
+        s2.fillRect(x, y, 1, 1);
       }
     }
   })();
 
   var RINGS = [
-    { r: 28, speed: 0.0055, dots: 1 },
-    { r: 34, speed: -0.0034, dots: 1 },
-    { r: 39, speed: 0.0021, dots: 2 }
+    { r: 31, speed: 0.0052, dots: 1 },
+    { r: 38, speed: -0.0032, dots: 1 },
+    { r: 44, speed: 0.0020, dots: 2 }
   ];
-
-  function ringPixels(radius) {
-    // Midpoint-ish circle, deduped to whole pixels — chunky on purpose.
+  RINGS.forEach(function (ring) {
     var pts = [], seen = {};
-    for (var a = 0; a < 360; a += 1.2) {
+    for (var a = 0; a < 360; a += 1.1) {
       var t = a * Math.PI / 180;
-      var x = Math.round(CX + Math.cos(t) * radius);
-      var y = Math.round(CY + Math.sin(t) * radius);
+      var x = Math.round(CX + Math.cos(t) * ring.r), y = Math.round(CY + Math.sin(t) * ring.r);
       var k = x + ',' + y;
       if (!seen[k]) { seen[k] = 1; pts.push([x, y]); }
     }
-    return pts;
-  }
-  RINGS.forEach(function (ring) { ring.pts = ringPixels(ring.r); });
+    ring.pts = pts;
+  });
 
-  var t0 = performance.now();
+  // Fireflies — straight out of Meet's living room.
+  var FLY = [];
+  for (var i = 0; i < 9; i++) {
+    FLY.push({
+      x: 8 + Math.random() * (S - 16),
+      y: 10 + Math.random() * (S - 20),
+      ph: Math.random() * 6.28,
+      spd: 0.35 + Math.random() * 0.7,
+      amp: 3 + Math.random() * 7
+    });
+  }
+
+  var t0 = performance.now(), raf = 0;
 
   function draw(now) {
-    var t = (now - t0);
+    var t = now - t0;
     ctx.clearRect(0, 0, S, S);
 
-    // faint dotted orbit rings
-    ctx.fillStyle = 'rgba(92,129,73,0.28)';
+    ctx.fillStyle = 'rgba(92,129,73,0.26)';
     RINGS.forEach(function (ring) {
-      for (var i = 0; i < ring.pts.length; i += 4) {
-        ctx.fillRect(ring.pts[i][0], ring.pts[i][1], 1, 1);
+      for (var i = 0; i < ring.pts.length; i += 4) ctx.fillRect(ring.pts[i][0], ring.pts[i][1], 1, 1);
+    });
+
+    ctx.drawImage(sphere, 0, 0);
+
+    // warm ember pool under the orb, as if lit from a hearth off-frame
+    ctx.fillStyle = 'rgba(207,122,82,0.13)';
+    ctx.fillRect(CX - 17, CY + R - 1, 34, 2);
+    ctx.fillStyle = 'rgba(207,122,82,0.08)';
+    ctx.fillRect(CX - 11, CY + R + 1, 22, 2);
+
+    RINGS.forEach(function (ring, ri) {
+      for (var d = 0; d < ring.dots; d++) {
+        var ang = (reduce ? 0.8 : t * ring.speed) + d * Math.PI * 2 / ring.dots + ri * 1.7;
+        var x = Math.round(CX + Math.cos(ang) * ring.r), y = Math.round(CY + Math.sin(ang) * ring.r);
+        ctx.fillStyle = '#5c8149'; ctx.fillRect(x - 1, y - 1, 2, 2);
+        ctx.fillStyle = 'rgba(199,240,116,0.85)'; ctx.fillRect(x - 1, y - 1, 1, 1);
       }
     });
 
-    // the sphere, breathing by one pixel
-    var puff = reduce ? 0 : (Math.sin(t * 0.0009) > 0.55 ? 1 : 0);
-    if (puff) {
-      ctx.drawImage(sphere, CX, CY, S - CX, S - CY, CX - 1, CY - 1, S - CX + 2, S - CY + 2);
-      ctx.drawImage(sphere, 0, 0, S, S, -0.5, -0.5, S + 1, S + 1);
-    } else {
-      ctx.drawImage(sphere, 0, 0);
-    }
-
-    // orbiting pixels
-    RINGS.forEach(function (ring, ri) {
-      for (var d = 0; d < ring.dots; d++) {
-        var ang = (reduce ? 0.8 : t * ring.speed) + (d * Math.PI * 2 / ring.dots) + ri * 1.7;
-        var x = Math.round(CX + Math.cos(ang) * ring.r);
-        var y = Math.round(CY + Math.sin(ang) * ring.r);
-        ctx.fillStyle = '#5c8149';
-        ctx.fillRect(x - 1, y - 1, 2, 2);
-        ctx.fillStyle = 'rgba(199,240,116,0.85)';
-        ctx.fillRect(x - 1, y - 1, 1, 1);
+    FLY.forEach(function (f, i) {
+      var ph = reduce ? f.ph : f.ph + t * 0.0006 * f.spd;
+      var x = Math.round(f.x + Math.cos(ph) * f.amp);
+      var y = Math.round(f.y + Math.sin(ph * 1.4) * f.amp * 0.7);
+      var glow = reduce ? 0.7 : 0.45 + 0.55 * Math.abs(Math.sin(ph * 2.1 + i));
+      var dx = x - CX, dy = y - CY;
+      if (dx * dx + dy * dy < (R + 2) * (R + 2)) return;   // don't sit on the orb
+      ctx.fillStyle = 'rgba(255,230,160,' + (glow * 0.85).toFixed(2) + ')';
+      ctx.fillRect(x, y, 1, 1);
+      if (glow > 0.8) {
+        ctx.fillStyle = 'rgba(255,207,135,0.22)';
+        ctx.fillRect(x - 1, y, 3, 1); ctx.fillRect(x, y - 1, 1, 3);
       }
     });
 
     raf = requestAnimationFrame(draw);
   }
-
-  var raf = requestAnimationFrame(draw);
+  raf = requestAnimationFrame(draw);
 })();
