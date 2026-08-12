@@ -128,12 +128,12 @@ em { font-style: italic; }
 
 /* ── hero ────────────────────────────────────────────────────── */
 .hero {
-  min-height: 100svh;
+  min-height: auto;
   display: grid;
-  grid-template-columns: 1.25fr .75fr;
+  grid-template-columns: 1.18fr .82fr;
   align-items: center;
   gap: 4vw;
-  padding: 118px clamp(20px, 7vw, 96px) 60px;
+  padding: 112px clamp(20px, 7vw, 96px) 66px;
 }
 
 .hero-copy { min-width: 0; }
@@ -157,46 +157,89 @@ em { font-style: italic; }
 
 .hero-actions { display: flex; align-items: center; gap: 26px; flex-wrap: wrap; }
 
-.hero-visual {
-  position: relative;
-  aspect-ratio: 1;
-  max-height: 68vh;
-  display: grid;
-  place-items: center;
+.hero-visual { display: flex; flex-direction: column; gap: 14px; }
+
+/* ── live state panel ─────────────────────────────────────────── */
+.panel {
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,.34);
+  border-radius: 3px;
+  overflow: hidden;
 }
-.visual-meta, .visual-caption {
-  position: absolute;
+.panel-head, .panel-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 13px;
   font: 10px var(--mono);
   letter-spacing: .08em;
   text-transform: uppercase;
   color: var(--moss);
 }
-.visual-meta {
-  top: 0; left: 0; right: 0;
-  display: flex; justify-content: space-between;
-  padding-bottom: 12px;
-  border-bottom: 1px solid var(--line);
+.panel-head { border-bottom: 1px solid var(--line); }
+.panel-foot { border-top: 1px solid var(--line); color: rgba(43,51,39,.42); }
+.panel-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--lime);
+  box-shadow: 0 0 0 3px rgba(199,240,116,.28);
+  animation: livepulse 2.4s ease-in-out infinite;
 }
-.visual-caption { bottom: 0; left: 0; }
+@keyframes livepulse { 0%,100% { opacity: .45 } 50% { opacity: 1 } }
 
-.orb {
-  width: min(27vw, 360px);
-  aspect-ratio: 1;
-  border-radius: 50%;
-  position: relative;
-  filter: drop-shadow(0 22px 30px rgba(60,90,55,.14));
+.panel-rows { padding: 12px 13px 13px; }
+
+.srow {
+  display: grid;
+  grid-template-columns: 74px 1fr 30px;
+  align-items: center;
+  gap: 9px;
+  padding: 2.5px 0;
 }
+.sname {
+  font: 10px var(--mono);
+  letter-spacing: .04em;
+  color: rgba(43,51,39,.6);
+}
+.sval {
+  font: 10px var(--mono);
+  color: rgba(43,51,39,.42);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.sbar { display: flex; gap: 2px; }
+.sbar i {
+  flex: 1;
+  height: 8px;
+  background: rgba(43,51,39,.075);
+  transition: background .18s linear;
+}
+.srow.cool i.on { background: var(--moss); }
+.srow.warm i.on { background: var(--ember); }
 
- }
+.sevent {
+  margin-top: 11px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--line);
+  font: 10px var(--mono);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: rgba(43,51,39,.3);
+  transition: color .3s;
+  min-height: 13px;
+}
+.sevent.lit { color: var(--ember); }
+
+.visual-note {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: rgba(43,51,39,.5);
+}
 
 @media (max-width: 900px) {
   .hero { grid-template-columns: 1fr; padding-top: 118px; gap: 8vw; }
-  /* orbits sit at -36% inset, so the visual must leave room for them or they
-     run off the viewport edge */
-  .hero-visual { order: -1; width: 60vw; max-width: 240px; margin: 0 auto 8px; }
-  .orb { width: 56vw; max-width: 230px; }
-  .visual-meta, .visual-caption { display: none; }
-}
+  .hero-visual { order: 1; margin-top: 2px; }
+    }
 
 /* ── statement (inverted) ────────────────────────────────────── */
 .statement {
