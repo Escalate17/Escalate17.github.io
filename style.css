@@ -247,26 +247,55 @@ em { font-style: italic; }
   background: var(--ink);
   color: var(--paper);
   display: grid;
-  grid-template-columns: 1fr .72fr;
-  gap: 6vw;
-  align-items: end;
+  grid-template-columns: 1fr .8fr;
+  gap: clamp(32px, 4vw, 64px);
+  align-items: start;
+  position: relative;
+  overflow: hidden;
 }
 .statement > p {
-  font: clamp(38px, 5.4vw, 86px)/1.02 var(--serif);
-  letter-spacing: -.035em;
+  font: clamp(32px, 3.9vw, 58px)/1.1 var(--serif);
+  letter-spacing: -.03em;
   margin: 0;
+  position: relative;
+  z-index: 2;
 }
 .statement > p em { color: var(--lime); }
-.statement-side { align-self: end; }
+.statement-side { align-self: start; padding-top: 6px; position: relative; z-index: 2; }
 
 .statement .small {
-  font-size: 16px;
-  line-height: 1.68;
-  color: rgba(244,239,225,.74);
+  font-size: clamp(15px, 1.05vw, 17px);
+  line-height: 1.7;
+  color: rgba(244,239,225,.76);
   margin: 0;
 }
 .statement .small em { color: var(--clay); font-style: italic; }
 @media (max-width: 900px) { .statement { grid-template-columns: 1fr; gap: 40px; } }
+
+/* fireflies + hearth glow in the dark sections (Meet's living room) */
+.flies {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+  image-rendering: pixelated;
+}
+.hearth {
+  position: absolute;
+  left: 0; right: 0; bottom: -40%;
+  height: 70%;
+  pointer-events: none;
+  z-index: 0;
+  background: radial-gradient(ellipse at 22% 100%, rgba(207,122,82,.20) 0%, transparent 62%),
+              radial-gradient(ellipse at 78% 100%, rgba(255,207,135,.10) 0%, transparent 58%);
+}
+.closing { position: relative; overflow: hidden; }
+/* must exclude the decorative layers — a bare `> *` overrides their
+   position:absolute, drops them into flow, and the canvas/ResizeObserver then
+   feed back into the section height until it runs away */
+.closing > *:not(.flies):not(.hearth) { position: relative; z-index: 2; }
 
 /* ── shared section head ─────────────────────────────────────── */
 .section-head { max-width: 900px; margin-bottom: clamp(32px, 3.6vw, 54px); }

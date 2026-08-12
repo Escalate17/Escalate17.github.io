@@ -37,6 +37,58 @@
     }
   }
 
+  /* ---------- fireflies in the dark sections ----------
+     Drifting warm pixels, straight out of Meet's living room. Drawn on a low-res
+     canvas and scaled up so they stay chunky rather than smooth blurs. */
+  document.querySelectorAll('canvas.flies').forEach(function (cv) {
+    var host = cv.parentElement;
+    var n = parseInt(cv.getAttribute('data-flies'), 10) || 12;
+    var ctx = cv.getContext('2d');
+    var W = 0, H = 0, SCALE = 5;          // 1 logical px = 5 css px
+
+    var flies = [];
+    for (var i = 0; i < n; i++) {
+      flies.push({
+        x: Math.random(), y: 0.12 + Math.random() * 0.82,
+        ph: Math.random() * 6.28,
+        spd: 0.25 + Math.random() * 0.6,
+        amp: 0.012 + Math.random() * 0.03,
+        drift: (Math.random() - 0.5) * 0.00004
+      });
+    }
+
+    function size() {
+      var r = host.getBoundingClientRect();
+      W = Math.max(1, Math.round(r.width / SCALE));
+      H = Math.max(1, Math.round(r.height / SCALE));
+      cv.width = W; cv.height = H;
+      ctx.imageSmoothingEnabled = false;
+    }
+    size();
+    if (typeof ResizeObserver !== 'undefined') new ResizeObserver(size).observe(host);
+
+    var t0 = performance.now();
+    function paint(now) {
+      var t = now - t0;
+      ctx.clearRect(0, 0, W, H);
+      flies.forEach(function (f, i) {
+        if (!reduce) f.x = (f.x + f.drift * 16 + 1) % 1;
+        var ph = reduce ? f.ph : f.ph + t * 0.0007 * f.spd;
+        var x = Math.round((f.x + Math.cos(ph) * f.amp) * W);
+        var y = Math.round((f.y + Math.sin(ph * 1.3) * f.amp * 1.6) * H);
+        var glow = reduce ? 0.6 : 0.30 + 0.70 * Math.abs(Math.sin(ph * 1.9 + i));
+        if (glow > 0.86) {                       // halo at peak brightness
+          ctx.fillStyle = 'rgba(255,207,135,0.14)';
+          ctx.fillRect(x - 1, y, 3, 1); ctx.fillRect(x, y - 1, 1, 3);
+        }
+        ctx.fillStyle = 'rgba(255,230,160,' + (glow * 0.9).toFixed(2) + ')';
+        ctx.fillRect(x, y, 1, 1);
+      });
+      requestAnimationFrame(paint);
+    }
+    requestAnimationFrame(paint);
+  });
+
   /* ---------- live state panel ----------
      A reduced version of the real engine: per-rasa decay rates taken from the
      reference table, a few of the 18 couplings, and occasional events. The bars
