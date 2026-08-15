@@ -1,0 +1,50 @@
+# Keep Meet's backend awake.
+#
+# Render's free tier sleeps a web service after 15 minutes idle, and the wake-up costs
+# roughly 50 seconds — which, for a companion app, is a person typing "hi" and watching
+# nothing happen. This pings /health just inside that window so the service never sleeps.
+#
+# WHY IT LIVES IN THIS REPO AND NOT meet-backend: Actions minutes are only free without
+# limit on PUBLIC repos. meet-backend is private, where the allowance is 2,000 minutes a
+# month; every run bills a minimum of one minute, so a 14-minute cadence (~3,000 runs)
+# would blow through it. This repo is public, so the same schedule costs nothing.
+#
+# The URL is not a secret — it already ships inside the web app's JS bundle.
+#
+# DELETE THIS once Meet moves to Azure Container Apps: that scales to zero without a
+# forced sleep, so keeping it warm stops being necessary.
+
+name: keep meet warm
+
+on:
+  schedule:
+    # Every 14 minutes — just inside Render's 15-minute idle timeout.
+    - cron: "*/14 * * * *"
+  workflow_dispatch:        # so it can be triggered by hand to test
+
+# No repo contents are touched; drop the default write permissions.
+permissions: {}
+
+concurrency:
+  group: keep-meet-warm
+  cancel-in-progress: false
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Ping /health
+        run: |
+          URL="https://meet-backend-j46u.onrender.com/health"
+          # --max-time 90 because a cold start legitimately takes ~50s; a shorter
+          # timeout would report failure for a service that is merely waking.
+          code=$(curl -sS -o /tmp/body -w '%{http_code}' --max-time 90 \
+                   --retry 2 --retry-delay 20 --retry-connrefused "$URL" || echo 000)
+          echo "HTTP $code"
+          cat /tmp/body || true
+          echo
+          if [ "$code" != "200" ]; then
+            echo "::error::Meet backend unhealthy (HTTP $code) — check Render logs"
+            exit 1
+          fi
