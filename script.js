@@ -20,6 +20,53 @@
   var year = document.getElementById('year');
   if (year) year.textContent = new Date().getFullYear();
 
+  /* ---------- contact email copy & feedback ---------- */
+  var emailBtn = document.getElementById('email-btn');
+  if (emailBtn) {
+    var emailAddress = 'tarangpatel1703@gmail.com';
+    var resetTimer = null;
+    var originalHTML = emailBtn.innerHTML;
+
+    function fallbackCopy(text) {
+      try {
+        var ta = document.createElement('textarea');
+        ta.value = text;
+        ta.setAttribute('readonly', '');
+        ta.style.position = 'fixed';
+        ta.style.top = '-9999px';
+        ta.style.left = '-9999px';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      } catch (err) {
+        // silent fallback
+      }
+    }
+
+    emailBtn.addEventListener('click', function () {
+      // 1. Copy email address to clipboard
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(emailAddress).catch(function () {
+          fallbackCopy(emailAddress);
+        });
+      } else {
+        fallbackCopy(emailAddress);
+      }
+
+      // 2. Inline visual confirmation
+      emailBtn.classList.add('copied');
+      emailBtn.innerHTML = 'Copied \u2014 ' + emailAddress;
+
+      if (resetTimer) clearTimeout(resetTimer);
+      resetTimer = setTimeout(function () {
+        emailBtn.classList.remove('copied');
+        emailBtn.innerHTML = originalHTML;
+      }, 3000);
+    });
+  }
+
   /* ---------- reveal ---------- */
   var items = document.querySelectorAll('.reveal');
   if (items.length) {
